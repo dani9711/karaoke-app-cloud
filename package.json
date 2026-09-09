@@ -1,0 +1,14 @@
+{
+  "name": "soiree-karaoke",
+  "version": "1.0.0",
+  "description": "Application locale de soirée karaoké : les chanteurs choisissent un titre depuis leur téléphone (Wi-Fi local), l'écran de l'animateur affiche la file d'attente en direct.",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {},
+  "optionalDependencies": {
+    "qrcode": "^1.5.4"
+  }
+}

@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: soiree-karaoke
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PUBLIC_URL
+        sync: false
+      - key: HOST_PIN
+        sync: false
