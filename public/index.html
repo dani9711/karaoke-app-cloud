@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Soirée Karaoké</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎤</text></svg>" />
+<style>
+  :root{
+    --bg:#0d0b14;
+    --surface:#181320;
+    --surface-2:#221c2c;
+    --line:#332b40;
+    --text:#f5f0f7;
+    --text-dim:#a297b3;
+    --magenta:#ff2f8f;
+    --cyan:#20e0c8;
+    --gold:#ffb703;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+    min-height:100vh;
+  }
+  #app{
+    background:var(--bg);
+    color:var(--text);
+    min-height:100vh;
+    padding:0;
+    overflow-x:hidden;
+  }
+  .display{
+    font-family:Impact,"Arial Black",sans-serif;
+    letter-spacing:.01em;
+    text-transform:none;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:28px 20px 60px;}
+  .wrap.wide{max-width:920px;}
+
+  /* --- role select --- */
+  .role-screen{
+    min-height:70vh;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:40px 24px;
+    background:
+      radial-gradient(600px 300px at 15% 0%, rgba(255,47,143,.25), transparent 60%),
+      radial-gradient(600px 300px at 85% 10%, rgba(32,224,200,.22), transparent 60%);
+  }
+  .role-title{font-size:clamp(40px,10vw,72px);line-height:.95;margin:0 0 6px;}
+  .role-title span{display:block;}
+  .role-title .accent{color:var(--gold);}
+  .role-sub{color:var(--text-dim);margin:0 0 36px;font-size:16px;max-width:38ch;}
+  .role-buttons{display:flex;flex-direction:column;gap:14px;width:100%;max-width:340px;}
+  .role-btn{
+    border:1px solid var(--line);background:var(--surface);color:var(--text);
+    padding:18px 20px;border-radius:14px;font-size:18px;font-weight:600;
+    cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;
+    transition:border-color .15s, transform .1s;
+  }
+  .role-btn:hover{border-color:var(--magenta);}
+  .role-btn:active{transform:scale(.98);}
+  .role-btn .emoji{font-size:26px;}
+  .role-btn small{display:block;color:var(--text-dim);font-weight:400;font-size:13px;margin-top:2px;}
+
+  /* --- shared bits --- */
+  .topbar{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:22px;gap:12px;flex-wrap:wrap;}
+  .topbar h1{font-size:clamp(26px,6vw,34px);margin:0;}
+  .backlink{background:none;border:none;color:var(--text-dim);font-size:13px;cursor:pointer;padding:0;}
+  .backlink:hover{color:var(--text);}
+
+  input[type=text], input[type=tel]{
+    width:100%;background:var(--surface);border:1px solid var(--line);color:var(--text);
+    padding:14px 16px;border-radius:10px;font-size:16px;outline:none;
+  }
+  input[type=text]:focus, input[type=tel]:focus{border-color:var(--cyan);}
+  label{display:block;font-size:13px;color:var(--text-dim);margin:16px 0 6px;}
+  .field-row{display:flex;gap:12px;}
+  .field-row > div{flex:1;}
+
+  button.primary{
+    background:var(--magenta);color:#fff;border:none;border-radius:10px;
+    padding:14px 20px;font-size:16px;font-weight:700;cursor:pointer;width:100%;
+    margin-top:22px;
+  }
+  button.primary:active{transform:scale(.99);}
+  button.primary:disabled{background:var(--surface-2);color:var(--text-dim);cursor:not-allowed;}
+  button.ghost{
+    background:transparent;border:1px solid var(--line);color:var(--text-dim);
+    border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer;
+  }
+  button.ghost:hover{color:var(--text);border-color:var(--cyan);}
+
+  /* --- catalog search --- */
+  .song-list{margin-top:16px;display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto;}
+  .song-card{
+    background:var(--surface);border:1px solid var(--line);border-radius:10px;
+    padding:12px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  }
+  .song-card:hover{border-color:var(--gold);}
+  .song-card .meta{min-width:0;}
+  .song-card .t{font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .song-card .a{color:var(--text-dim);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .lang-tag{
+    flex:none;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;
+    background:var(--surface-2);color:var(--text-dim);letter-spacing:.03em;
+  }
+  .lang-tag.fr{color:var(--cyan);}
+  .lang-tag.en{color:var(--gold);}
+  .lang-tag.cr{color:var(--magenta);}
+  .empty-hint{color:var(--text-dim);font-size:14px;padding:14px 4px;}
+
+  .picked{
+    background:var(--surface);border:1px solid var(--cyan);border-radius:10px;
+    padding:14px 16px;margin-top:16px;display:flex;justify-content:space-between;align-items:center;gap:10px;
+  }
+  .picked .t{font-weight:700;}
+  .picked .a{color:var(--text-dim);font-size:13px;}
+  .checkbox-row{display:flex;align-items:flex-start;gap:10px;margin-top:16px;}
+  .checkbox-row input{margin-top:3px;}
+  .checkbox-row span{font-size:13px;color:var(--text-dim);line-height:1.4;}
+  .confirm{
+    text-align:center;padding:50px 20px;
+  }
+  .confirm .big{font-size:48px;margin-bottom:6px;}
+  .confirm h2{margin:0 0 8px;font-size:24px;}
+  .confirm p{color:var(--text-dim);margin:0 0 26px;}
+
+  .error-note{
+    background:rgba(255,47,143,.12);border:1px solid var(--magenta);color:var(--text);
+    border-radius:10px;padding:10px 14px;font-size:13px;margin-top:14px;
+  }
+
+  /* --- host / queue --- */
+  .join-box{
+    display:flex;gap:18px;align-items:center;flex-wrap:wrap;
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:16px 18px;margin-bottom:20px;
+  }
+  .join-box img{width:110px;height:110px;border-radius:8px;background:#fff;padding:6px;flex:none;}
+  .join-box .info b{display:block;font-size:14px;margin-bottom:4px;}
+  .join-box .info code{
+    display:inline-block;background:var(--surface-2);color:var(--cyan);
+    padding:6px 10px;border-radius:8px;font-size:14px;word-break:break-all;
+  }
+  .stat-row{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 16px;flex:1;min-width:120px;}
+  .stat b{font-size:24px;display:block;}
+  .stat span{font-size:12px;color:var(--text-dim);}
+  .queue-item{
+    background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--magenta);
+    border-radius:10px;padding:14px 16px;margin-bottom:10px;
+    display:flex;justify-content:space-between;gap:14px;align-items:center;
+  }
+  .queue-item.done{border-left-color:var(--line);opacity:.45;}
+  .queue-item .num{font-size:13px;color:var(--text-dim);width:22px;flex:none;text-align:center;}
+  .queue-item .info{min-width:0;flex:1;}
+  .queue-item .info .t{font-weight:700;font-size:16px;}
+  .queue-item .info .a{color:var(--text-dim);font-size:13px;}
+  .queue-item .info .p{margin-top:4px;font-size:13px;}
+  .queue-item .info .p .pseudo{color:var(--gold);font-weight:600;}
+  .queue-item .info .wa{color:var(--cyan);font-size:12px;}
+  .queue-item .actions{display:flex;gap:8px;flex:none;}
+  .icon-btn{
+    background:var(--surface-2);border:1px solid var(--line);color:var(--text);
+    width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:15px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .icon-btn:hover{border-color:var(--cyan);}
+  .admin-toggle{margin-top:30px;}
+  .admin-panel{
+    margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;
+  }
+  .admin-panel h3{margin:0 0 4px;font-size:15px;}
+  .lang-pick{display:flex;gap:8px;margin-top:6px;}
+  .lang-pick button{
+    flex:1;background:var(--surface-2);border:1px solid var(--line);color:var(--text-dim);
+    padding:8px;border-radius:8px;cursor:pointer;font-size:13px;
+  }
+  .lang-pick button.active{border-color:var(--gold);color:var(--gold);}
+  .loading-note{color:var(--text-dim);font-size:13px;text-align:center;padding:30px 0;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(function(){
+  var app = document.getElementById('app');
+  var savedPin = '';
+  try { savedPin = window.localStorage.getItem('hostPin') || ''; } catch(e){}
+  var state = {
+    role: null, catalog: [], queue: [], picked: null, submitted: false,
+    admin: false, newLang: 'fr', pollHandle: null, joinInfo: null,
+    errorMsg: null, catalogLoaded: false,
+    hostPin: savedPin, pinInput: savedPin, showPinBox: false
+  };
+
+  function fold(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+  function esc(s){ var d=document.createElement('div'); d.textContent = s==null?'':s; return d.innerHTML; }
+  function langLabel(l){ return l==='fr' ? 'FR' : l==='en' ? 'EN' : l==='cr' ? 'KRÉ' : (l||'').toUpperCase(); }
+
+  async function api(method, url, body){
+    var headers = {};
+    if(body) headers['Content-Type'] = 'application/json';
+    if(state.hostPin) headers['x-host-pin'] = state.hostPin;
+    var res = await fetch(url, {
+      method: method,
+      headers: Object.keys(headers).length ? headers : undefined,
+      body: body ? JSON.stringify(body) : undefined
+    });
+    var data = null;
+    try { data = await res.json(); } catch(e){}
+    if(!res.ok){
+      if(res.status === 401){
+        throw new Error('Code animateur requis ou incorrect. Renseigne-le ci-dessous (🔒).');
+      }
+      var msg = (data && data.error) ? data.error : ('Erreur serveur (' + res.status + ')');
+      throw new Error(msg);
+    }
+    return data;
+  }
+
+  async function ensureCatalog(){
+    try{
+      var res = await api('GET', '/api/catalog');
+      state.catalog = res.catalog || [];
+      state.catalogLoaded = true;
+    }catch(e){
+      state.errorMsg = "Impossible de contacter le serveur karaoké. Vérifie que tu es bien connecté au même Wi-Fi.";
+    }
+  }
+
+  async function loadQueue(){
+    try{
+      var res = await api('GET', '/api/queue');
+      state.queue = res.queue || [];
+      state.errorMsg = null;
+    }catch(e){
+      state.errorMsg = "Connexion au serveur perdue. Nouvelle tentative dans quelques secondes...";
+    }
+  }
+
+  async function loadJoinInfo(){
+    try{
+      state.joinInfo = await api('GET', '/api/join-info');
+    }catch(e){ state.joinInfo = null; }
+  }
+
+  function stopPolling(){ if(state.pollHandle){ clearInterval(state.pollHandle); state.pollHandle = null; } }
+
+  function goRole(role){
+    stopPolling();
+    state.role = role;
+    state.picked = null;
+    state.submitted = false;
+    state.errorMsg = null;
+    render();
+    if(role === 'host'){
+      loadJoinInfo().then(render);
+      loadQueue().then(render);
+      state.pollHandle = setInterval(function(){ loadQueue().then(render); }, 3000);
+    } else if(role === 'singer'){
+      render();
+    }
+  }
+
+  function roleScreen(){
+    return '' +
+    '<div class="role-screen">' +
+      '<h1 class="role-title display">SOIRÉE<span class="accent">KARAOKé</span></h1>' +
+      '<p class="role-sub">Choisis ton titre depuis ton téléphone, ou suis la file d\'attente sur l\'écran principal.</p>' +
+      '<div class="role-buttons">' +
+        '<button class="role-btn" data-action="role-singer"><span class="emoji">🎤</span><span>Je suis chanteur<small>Chercher un titre et envoyer ma demande</small></span></button>' +
+        '<button class="role-btn" data-action="role-host"><span class="emoji">🖥️</span><span>Écran animateur<small>Voir la file d\'attente en direct</small></span></button>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function singerScreen(){
+    if(!state.catalogLoaded){
+      return '<div class="wrap"><div class="loading-note">Chargement du catalogue...</div>' +
+        (state.errorMsg ? '<div class="error-note">' + esc(state.errorMsg) + '</div>' : '') + '</div>';
+    }
+
+    if(state.submitted){
+      return '<div class="wrap"><div class="confirm">' +
+        '<div class="big">🎶</div>' +
+        '<h2>Demande envoyée !</h2>' +
+        '<p>' + esc(state.lastPseudo) + ', ton titre est dans la file. Regarde l\'écran de l\'animateur pour ton tour.</p>' +
+        '<button class="role-btn" style="display:inline-flex;width:auto" data-action="singer-again"><span class="emoji">➕</span><span>Demander un autre titre</span></button>' +
+      '</div></div>';
+    }
+
+    var q = state.searchQuery || '';
+    var filtered = q.trim() ? state.catalog.filter(function(s){
+      var f = fold(q);
+      return fold(s.title).indexOf(f) !== -1 || fold(s.artist).indexOf(f) !== -1;
+    }).slice(0,30) : [];
+
+    var listHtml = '';
+    if(state.picked){
+      listHtml = '<div class="picked"><div><div class="t">' + esc(state.picked.title) + '</div><div class="a">' + esc(state.picked.artist) + '</div></div>' +
+        '<button class="ghost" data-action="unpick">Changer</button></div>';
+    } else if(q.trim() && filtered.length){
+      listHtml = '<div class="song-list">' + filtered.map(function(s){
+        return '<div class="song-card" data-action="pick" data-id="' + s.id + '">' +
+          '<div class="meta"><div class="t">' + esc(s.title) + '</div><div class="a">' + esc(s.artist) + '</div></div>' +
+          '<span class="lang-tag ' + s.lang + '">' + langLabel(s.lang) + '</span></div>';
+      }).join('') + '</div>';
+    } else if(q.trim() && !filtered.length){
+      listHtml = '<div class="empty-hint">Aucun titre trouvé pour « ' + esc(q) + ' ». Vérifie l\'orthographe ou essaie l\'artiste.</div>';
+    }
+
+    var canSubmit = state.picked && (state.pseudoVal || '').trim().length > 0 && !state.submitting;
+
+    return '<div class="wrap">' +
+      '<div class="topbar"><h1 class="display">🎤 Choisir un titre</h1><button class="backlink" data-action="role-back">‹ retour</button></div>' +
+      '<input type="text" placeholder="Cherche un titre ou un artiste..." value="' + esc(q) + '" data-field="search" ' + (state.picked ? 'disabled' : '') + ' />' +
+      listHtml +
+      '<label for="f-pseudo">Ton pseudo</label>' +
+      '<input type="text" id="f-pseudo" placeholder="Comment on t\'appelle ce soir ?" value="' + esc(state.pseudoVal||'') + '" data-field="pseudo" />' +
+      '<label for="f-phone">Numéro de téléphone (facultatif)</label>' +
+      '<input type="tel" id="f-phone" placeholder="0690 00 00 00" value="' + esc(state.phoneVal||'') + '" data-field="phone" />' +
+      '<div class="checkbox-row"><input type="checkbox" id="f-wa" ' + (state.waVal ? 'checked' : '') + ' data-field="wa" />' +
+      '<span>Ajoute-moi au groupe WhatsApp de la soirée (nécessite ton numéro)</span></div>' +
+      (state.errorMsg ? '<div class="error-note">' + esc(state.errorMsg) + '</div>' : '') +
+      '<button class="primary" data-action="submit" ' + (canSubmit ? '' : 'disabled') + '>' + (state.submitting ? 'Envoi...' : 'Envoyer ma demande') + '</button>' +
+    '</div>';
+  }
+
+  function hostScreen(){
+    var pending = state.queue.filter(function(x){ return x.status !== 'done'; });
+    var done = state.queue.filter(function(x){ return x.status === 'done'; });
+
+    var joinHtml = '';
+    if(state.joinInfo){
+      var alts = state.joinInfo.alternateUrls || [];
+      var joinLabel = state.joinInfo.cloud
+        ? 'Pour chanter : scannez ce QR code (depuis n\'importe quel réseau, Wi-Fi ou 4G/5G)'
+        : 'Pour chanter : scannez ce QR code (même Wi-Fi)';
+      joinHtml = '<div class="join-box">' +
+        (state.joinInfo.qrDataUrl ? '<img src="' + state.joinInfo.qrDataUrl + '" alt="QR code pour rejoindre" />' : '') +
+        '<div class="info"><b>' + joinLabel + '</b><code>' + esc(state.joinInfo.url) + '</code>' +
+        (alts.length ? '<div style="margin-top:8px;color:var(--text-dim);font-size:12px;">QR code non lisible ? Essayez plutôt : ' +
+          alts.map(function(u){ return '<code>' + esc(u) + '</code>'; }).join(' ou ') + '</div>' : '') +
+        '</div>' +
+      '</div>';
+    }
+
+    var pinHtml = '<div class="admin-toggle"><button class="ghost" data-action="toggle-pin">' +
+      (state.showPinBox ? 'Fermer' : (state.hostPin ? '🔒 Code animateur (enregistré)' : '🔒 Code animateur')) +
+      '</button></div>' +
+      (state.showPinBox ? '<div class="admin-panel">' +
+        '<label for="f-pin">Code animateur' + (state.joinInfo && state.joinInfo.requirePin ? ' (requis sur ce serveur)' : ' (facultatif, seulement si activé sur le serveur)') + '</label>' +
+        '<input type="text" id="f-pin" data-field="pin" value="' + esc(state.pinInput||'') + '" placeholder="ex: 1234" />' +
+        '<button class="primary" data-action="save-pin">Enregistrer</button>' +
+      '</div>' : '');
+
+    var itemsHtml = state.queue.length ? state.queue.map(function(item, i){
+      var isDone = item.status === 'done';
+      return '<div class="queue-item ' + (isDone?'done':'') + '">' +
+        '<div class="num">' + (i+1) + '</div>' +
+        '<div class="info">' +
+          '<div class="t">' + esc(item.title) + '</div>' +
+          '<div class="a">' + esc(item.artist) + '</div>' +
+          '<div class="p"><span class="pseudo">' + esc(item.pseudo) + '</span>' + (item.phone ? ' · ' + esc(item.phone) : '') + '</div>' +
+          (item.wa ? '<div class="wa">💬 souhaite rejoindre le groupe WhatsApp</div>' : '') +
+        '</div>' +
+        '<div class="actions">' +
+          (isDone ? '' : '<button class="icon-btn" title="Marquer comme chanté" data-action="mark-done" data-id="' + item.id + '">✓</button>') +
+          '<button class="icon-btn" title="Retirer" data-action="remove" data-id="' + item.id + '">✕</button>' +
+        '</div>' +
+      '</div>';
+    }).join('') : '<div class="empty-hint">Aucune demande pour le moment. Fais scanner le QR code aux chanteurs !</div>';
+
+    return '<div class="wrap wide">' +
+      '<div class="topbar"><h1 class="display">🖥️ File d\'attente</h1><button class="backlink" data-action="role-back">‹ retour</button></div>' +
+      joinHtml +
+      (state.errorMsg ? '<div class="error-note">' + esc(state.errorMsg) + '</div>' : '') +
+      '<div class="stat-row">' +
+        '<div class="stat"><b>' + pending.length + '</b><span>en attente</span></div>' +
+        '<div class="stat"><b>' + done.length + '</b><span>déjà chantées</span></div>' +
+        '<div class="stat"><b>' + state.catalog.length + '</b><span>titres au catalogue</span></div>' +
+      '</div>' +
+      itemsHtml +
+      (state.queue.length ? '<button class="ghost" style="margin-top:8px" data-action="clear-queue">Vider la file</button>' : '') +
+      '<div class="admin-toggle"><button class="ghost" data-action="toggle-admin">' + (state.admin ? 'Fermer' : '+ Ajouter un titre au catalogue') + '</button></div>' +
+      (state.admin ? adminPanel() : '') +
+      pinHtml +
+    '</div>';
+  }
+
+  function adminPanel(){
+    return '<div class="admin-panel">' +
+      '<h3>Nouveau titre</h3>' +
+      '<label for="a-title">Titre</label><input type="text" id="a-title" data-field="a-title" value="' + esc(state.aTitle||'') + '" />' +
+      '<label for="a-artist">Artiste</label><input type="text" id="a-artist" data-field="a-artist" value="' + esc(state.aArtist||'') + '" />' +
+      '<label>Langue</label>' +
+      '<div class="lang-pick">' +
+        ['fr','en','cr'].map(function(l){ return '<button class="' + (state.newLang===l?'active':'') + '" data-action="set-lang" data-lang="' + l + '">' + langLabel(l) + '</button>'; }).join('') +
+      '</div>' +
+      '<button class="primary" data-action="add-song">Ajouter au catalogue</button>' +
+    '</div>';
+  }
+
+  function render(){
+    var focused = document.activeElement;
+    var focusSel = null, selStart = null, selEnd = null;
+    if(focused && focused.getAttribute && focused.getAttribute('data-field')){
+      focusSel = '[data-field="' + focused.getAttribute('data-field') + '"]';
+      try { selStart = focused.selectionStart; selEnd = focused.selectionEnd; } catch(e){}
+    }
+
+    if(state.role === 'singer'){ app.innerHTML = singerScreen(); }
+    else if(state.role === 'host'){ app.innerHTML = hostScreen(); }
+    else { app.innerHTML = roleScreen(); }
+    bind();
+
+    if(focusSel){
+      var el = app.querySelector(focusSel);
+      if(el){
+        el.focus();
+        if(selStart != null && el.setSelectionRange){
+ ��       try { el.setSelectionRange(selStart, selEnd); } catch(e){}
+        }
+      }
+    }
+  }
+
+  function bind(){
+    app.querySelectorAll('[data-field]').forEach(function(el){
+      el.addEventListener('input', function(){
+        var f = el.getAttribute('data-field');
+        if(f === 'search'){ state.searchQuery = el.value; render(); }
+        else if(f === 'pseudo'){ state.pseudoVal = el.value; render(); }
+        else if(f === 'phone'){ state.phoneVal = el.value; }
+        else if(f === 'a-title'){ state.aTitle = el.value; }
+        else if(f === 'a-artist'){ state.aArtist = el.value; }
+        else if(f === 'pin'){ state.pinInput = el.value; }
+      });
+      el.addEventListener('change', function(){
+        var f = el.getAttribute('data-field');
+        if(f === 'wa'){ state.waVal = el.checked; }
+      });
+    });
+
+    app.querySelectorAll('[data-action]').forEach(function(el){
+      el.addEventListener('click', async function(){
+        var action = el.getAttribute('data-action');
+        if(action === 'role-singer'){
+          state.catalogLoaded = false;
+          goRole('singer');
+          await ensureCatalog();
+          render();
+        } else if(action === 'role-host'){
+          goRole('host');
+        } else if(action === 'role-back'){
+          stopPolling(); state.role = null; render();
+        } else if(action === 'pick'){
+          var id = el.getAttribute('data-id');
+          state.picked = state.catalog.find(function(s){ return s.id === id; });
+          render();
+        } else if(action === 'unpick'){
+          state.picked = null; render();
+        } else if(action === 'submit'){
+          if(!state.picked || !(state.pseudoVal||'').trim() || state.submitting) return;
+          state.submitting = true; render();
+          try{
+            await api('POST', '/api/queue', {
+              pseudo: state.pseudoVal.trim(),
+              title: state.picked.title,
+              artist: state.picked.artist,
+              phone: (state.phoneVal||'').trim(),
+              wa: !!(state.waVal && (state.phoneVal||'').trim())
+            });
+            state.lastPseudo = state.pseudoVal.trim();
+            state.submitted = true;
+            state.errorMsg = null;
+          }catch(e){
+            state.errorMsg = "Impossible d'envoyer la demande : " + e.message;
+          }
+          state.submitting = false;
+          render();
+        } else if(action === 'singer-again'){
+          state.picked = null; state.pseudoVal=''; state.phoneVal=''; state.waVal=false;
+          state.searchQuery=''; state.submitted = false;
+          render();
+        } else if(action === 'mark-done'){
+          var mid = el.getAttribute('data-id');
+          try{ await api('POST', '/api/queue/' + mid + '/done'); }catch(e){}
+          await loadQueue(); render();
+        } else if(action === 'remove'){
+          var rid = el.getAttribute('data-id');
+          try{ await api('DELETE', '/api/queue/' + rid); }catch(e){}
+          await loadQueue(); render();
+        } else if(action === 'clear-queue'){
+          try{ await api('POST', '/api/queue/clear'); }catch(e){}
+          await loadQueue(); render();
+        } else if(action === 'toggle-admin'){
+          state.admin = !state.admin; render();
+        } else if(action === 'toggle-pin'){
+          state.showPinBox = !state.showPinBox; render();
+        } else if(action === 'save-pin'){
+          state.hostPin = (state.pinInput||'').trim();
+          try { window.localStorage.setItem('hostPin', state.hostPin); } catch(e){}
+          state.showPinBox = false;
+          state.errorMsg = null;
+          render();
+        } else if(action === 'set-lang'){
+          state.newLang = el.getAttribute('data-lang'); render();
+        } else if(action === 'add-song'){
+          var title = (state.aTitle||'').trim(), artist = (state.aArtist||'').trim();
+          if(!title || !artist) return;
+          try{
+            await api('POST', '/api/catalog', { title: title, artist: artist, lang: state.newLang });
+            var res = await api('GET', '/api/catalog');
+            state.catalog = res.catalog || [];
+          }catch(e){}
+          state.aTitle=''; state.aArtist='';
+          render();
+        }
+      });
+    });
+  }
+
+  // Ouvre directement le bon écran si l'URL contient ?role=singer ou ?role=host
+  // (c'est ce que fait le QR code de l'écran animateur).
+  var params = new URLSearchParams(window.location.search);
+  var initialRole = params.get('role');
+  if(initialRole === 'singer'){
+    render();
+    ensureCatalog().then(function(){ goRole('singer'); });
+  } else if(initialRole === 'host'){
+    goRole('host');
+  } else {
+    render();
+  }
+})();
+</script>
+</body>
+</html>
